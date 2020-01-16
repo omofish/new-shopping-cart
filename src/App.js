@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "semantic-ui-css/semantic.min.css";
-import { Card, Image } from "semantic-ui-react";
+import { Card, Image, Header, Divider } from "semantic-ui-react";
+import { to2DP } from "./components/utils";
 
 const App = () => {
   const [data, setData] = useState({});
@@ -31,10 +32,10 @@ const Product = ({ product }) => {
 
   return (
     <Card>
-      <Image src={imageURL} wrapped ui={false}/>
+      <Image src={imageURL} wrapped ui={false} />
       <Card.Content>
-        <Card.Header>{product.title}</Card.Header>
-        <Card.Description>{product.sku}</Card.Description>
+        <Card.Header textAlign="center">{product.title}</Card.Header>
+        <Card.Meta textAlign="center">{product.description}</Card.Meta>
       </Card.Content>
     </Card>
   );
