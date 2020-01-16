@@ -29,6 +29,7 @@ const App = () => {
 
 const Product = ({ product }) => {
   const imageURL = "data/products/" + product.sku + "_2.jpg";
+  const price = "$" + to2DP(product.price);
 
   return (
     <Card>
@@ -36,6 +37,10 @@ const Product = ({ product }) => {
       <Card.Content>
         <Card.Header textAlign="center">{product.title}</Card.Header>
         <Card.Meta textAlign="center">{product.description}</Card.Meta>
+        <Card.Content>
+          <Divider />
+          <Header textAlign="center">{price}</Header>
+        </Card.Content>
       </Card.Content>
     </Card>
   );
