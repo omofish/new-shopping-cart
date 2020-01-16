@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import 'semantic-ui-css/semantic.min.css'
-import { Header, Card } from "semantic-ui-react";
+import "semantic-ui-css/semantic.min.css";
+import { Card, Image } from "semantic-ui-react";
 
 const App = () => {
   const [data, setData] = useState({});
@@ -26,13 +26,18 @@ const App = () => {
   );
 };
 
-const Product = ({ product }) => (
-  <Card>
-    <Card.Content>
-      <Card.Header>{product.title}</Card.Header>
-      <Card.Description>{product.sku}</Card.Description>
-    </Card.Content>
-  </Card>
-);
+const Product = ({ product }) => {
+  const imageURL = "data/products/" + product.sku + "_2.jpg";
+
+  return (
+    <Card>
+      <Image src={imageURL} wrapped ui={false}/>
+      <Card.Content>
+        <Card.Header>{product.title}</Card.Header>
+        <Card.Description>{product.sku}</Card.Description>
+      </Card.Content>
+    </Card>
+  );
+};
 
 export default App;
