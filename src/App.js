@@ -132,9 +132,10 @@ const ShoppingCart = ({ cartItems, data }) => {
           ))}
         </Card.Group>
       </Segment>
-      <Segment attached="bottom">
+      <Segment attached="bottom" clearing>
         <Header size="large">Total Cost</Header>
         <Header><TotalCost cartItems={cartItems}/></Header>
+        <Button floated="right" positive>Checkout</Button>
       </Segment>
     </Segment.Group>
   );
