@@ -26,7 +26,7 @@ const fixedOverlayStyle = {
 
 const App = () => {
   const [data, setData] = useState({});
-  const [cartOpen, setCartOpen] = useState(true);
+  const [cartOpen, setCartOpen] = useState(false);
   const products = Object.values(data);
   const [cartItems, setCartItems] = useState([]);
 
@@ -57,7 +57,7 @@ const App = () => {
       <Sidebar.Pusher>
         <Menu style={fixedOverlayStyle} borderless>
           <Menu.Item>
-            <CartButton />
+            <CartButton state={{cartOpen, setCartOpen}} />
           </Menu.Item>
         </Menu>
         <Container>
@@ -112,7 +112,7 @@ const SizeButtons = () => (
   </Button.Group>
 );
 
-const CartButton = () => <Button icon="shopping cart" />;
+const CartButton = ({state}) => <Button toggle active={state.cartOpen} icon="shopping cart" onClick={()=> state.setCartOpen(!state.cartOpen)}/>;
 
 const ShoppingCart = ({ cartItems, data }) => {
   return (
