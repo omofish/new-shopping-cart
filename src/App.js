@@ -11,35 +11,60 @@ import {
   Grid,
   Icon,
   GridColumn,
-  Container
+  Container,
+  CardContent
 } from "semantic-ui-react";
 import { to2DP } from "./components/utils";
 
+const fixedOverlayStyle = {
+  border: "none",
+  borderRadius: 0,
+  boxShadow: "none",
+  position: "fixed",
+  zIndex: 10
+};
+
 const App = () => {
   const [data, setData] = useState({});
+  const [cartOpen, setCartOpen] = useState(true);
   const products = Object.values(data);
+  const [cartItems, setCartItems] = useState([]);
 
   useEffect(() => {
     const fetchProducts = async () => {
       const response = await fetch("./data/products.json");
       const json = await response.json();
       setData(json);
+
+      setCartItems([json["12064273040195392"], json["51498472915966370"]]);
     };
     fetchProducts();
   }, []);
 
   return (
-    <React.Fragment>
-    <Menu fixed="right" vertical compact>
-      <Menu.Item>
-      <CartButton/></Menu.Item>
-    </Menu>
-      <Container>
-        <Segment>
-          <Catalog products={products} />
-        </Segment>
-      </Container>
-    </React.Fragment>
+    <Sidebar.Pushable as={Segment}>
+      <Sidebar
+        width="very wide"
+        animation="push"
+        icon="labeled"
+        visible={cartOpen}
+      >
+        <ShoppingCart cartItems={cartItems} />
+      </Sidebar>
+
+      <Sidebar.Pusher>
+        <Menu style={fixedOverlayStyle} borderless>
+          <Menu.Item>
+            <CartButton />
+          </Menu.Item>
+        </Menu>
+        <Container>
+          <Segment>
+            <Catalog products={products} />
+          </Segment>
+        </Container>
+      </Sidebar.Pusher>
+    </Sidebar.Pushable>
   );
 };
 
@@ -60,7 +85,7 @@ const Product = ({ product }) => {
       <Image src={imageURL} wrapped ui={false} />
       <Card.Content>
         <Card.Header textAlign="center">{product.title}</Card.Header>
-        <Card.Meta textAlign="center">{product.description}</Card.Meta>
+        <Card.Meta textAlign="center">{product.style}</Card.Meta>
       </Card.Content>
       <Card.Content extra>
         <Header textAlign="center">{price}</Header>
@@ -80,17 +105,50 @@ const sizes = {
 const SizeButtons = () => (
   <Button.Group fluid>
     {Object.keys(sizes).map(size => (
-      <Button>{size}</Button>
+      <Button key={size}>{size}</Button>
     ))}
   </Button.Group>
 );
 
 const CartButton = () => <Button icon="shopping cart" />;
 
-const ShoppingCart = () => {
-  const [visible, setVisible] = { name: "visible" };
+const ShoppingCart = ({ cartItems }) => (
+  <Segment.Group>
+    <Segment>
+      <Header>Shopping Cart</Header>
+    </Segment>
+    <Segment>
+      <Card.Group itemsPerRow="1">
+        {cartItems.map(product => (
+          <CartItem key={product.sku} product={product} />
+        ))}
+      </Card.Group>
+    </Segment>
+  </Segment.Group>
+);
 
-  return <Sidebar></Sidebar>;
+const CartItem = ({ product }) => {
+  const imageURL = "data/products/" + product.sku + "_2.jpg";
+  const price = "$" + to2DP(product.price);
+
+  return (
+    <Card>
+      <Card.Content>
+        <Image src={imageURL} size="tiny" floated="left" />
+        <Button icon="x" floated="right" />
+        <Card.Header>{product.title}</Card.Header>
+        <Card.Meta>{product.style}</Card.Meta>
+        <Header size="large" color="blue">
+          {price}
+        </Header>
+        <Header floated="left">Quantity: </Header>
+        <Button.Group floated="left" compact>
+          <Button icon="minus" />
+          <Button icon="plus" />
+        </Button.Group>
+      </Card.Content>
+    </Card>
+  );
 };
 
 export default App;
