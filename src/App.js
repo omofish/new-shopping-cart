@@ -35,8 +35,10 @@ const App = () => {
       const response = await fetch("./data/products.json");
       const json = await response.json();
       setData(json);
-
-      setCartItems([json["12064273040195392"], json["51498472915966370"]]);
+      setCartItems([
+        { sku: "12064273040195392", price: 10.9, quantity: 2 },
+        { sku: "51498472915966370", price: 29.45, quantity: 1 }
+      ]);
     };
     fetchProducts();
   }, []);
@@ -49,7 +51,7 @@ const App = () => {
         icon="labeled"
         visible={cartOpen}
       >
-        <ShoppingCart cartItems={cartItems} />
+        <ShoppingCart cartItems={cartItems} data={data} />
       </Sidebar>
 
       <Sidebar.Pusher>
@@ -112,24 +114,35 @@ const SizeButtons = () => (
 
 const CartButton = () => <Button icon="shopping cart" />;
 
-const ShoppingCart = ({ cartItems }) => (
-  <Segment.Group>
-    <Segment>
-      <Header>Shopping Cart</Header>
-    </Segment>
-    <Segment>
-      <Card.Group itemsPerRow="1">
-        {cartItems.map(product => (
-          <CartItem key={product.sku} product={product} />
-        ))}
-      </Card.Group>
-    </Segment>
-  </Segment.Group>
-);
+const ShoppingCart = ({ cartItems, data }) => {
+  return (
+    <Segment.Group>
+      <Segment>
+        <Header>Shopping Cart</Header>
+      </Segment>
+      <Segment>
+        <Card.Group itemsPerRow="1">
+          {cartItems.map(item => (
+            <CartItem
+              key={item.sku}
+              quantity={item.quantity}
+              price={item.price}
+              product={data[item.sku]}
+            />
+          ))}
+        </Card.Group>
+      </Segment>
+      <Segment attached="bottom">
+        <Header size="large">Total Cost</Header>
+        <Header><TotalCost cartItems={cartItems}/></Header>
+      </Segment>
+    </Segment.Group>
+  );
+};
 
-const CartItem = ({ product }) => {
+const CartItem = ({ quantity, product, price }) => {
   const imageURL = "data/products/" + product.sku + "_2.jpg";
-  const price = "$" + to2DP(product.price);
+  const priceDisp = "$" + to2DP(price);
 
   return (
     <Card>
@@ -139,10 +152,10 @@ const CartItem = ({ product }) => {
         <Card.Header>{product.title}</Card.Header>
         <Card.Meta>{product.style}</Card.Meta>
         <Header size="large" color="blue">
-          {price}
+          {priceDisp}
         </Header>
-        <Header floated="left">Quantity: </Header>
-        <Button.Group floated="left" compact>
+        <Header floated="left">Quantity: {quantity}</Header>
+        <Button.Group size="mini">
           <Button icon="minus" />
           <Button icon="plus" />
         </Button.Group>
@@ -150,5 +163,15 @@ const CartItem = ({ product }) => {
     </Card>
   );
 };
+
+const TotalCost = ({cartItems}) => {
+  let total = 0;
+  if (cartItems) {
+    cartItems.forEach(item => {
+      total += item.price * item.quantity;
+    });
+    total = "$" + to2DP(total);
+  }
+  return(cartItems ? total : "$0.00")};
 
 export default App;
