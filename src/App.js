@@ -78,7 +78,7 @@ const App = () => {
         icon="labeled"
         visible={cartOpen}
       >
-        <ShoppingCart state={{ cartItems, setCartItems }} data={data} />
+        <ShoppingCart state={{ cartItems, setCartItems }} data={data} inventoryState={{ inventory, setInventory }}/>
       </Sidebar>
 
       <Sidebar.Pusher>
@@ -130,7 +130,6 @@ const Product = ({ product, state, cartOpenState, inventoryState }) => {
       ) > 0
     )
       productAvailable = true;
-    console.log("avail");
   }
 
   return (
@@ -141,9 +140,7 @@ const Product = ({ product, state, cartOpenState, inventoryState }) => {
         <Card.Meta textAlign="center">{product.style}</Card.Meta>
       </Card.Content>
       <Card.Content extra>
-        <Header textAlign="center" >
-          {price}
-        </Header>
+        <Header textAlign="center">{price}</Header>
         <SizeButtons
           product={product}
           state={state}
@@ -174,8 +171,14 @@ const SizeButtons = ({ product, state, cartOpenState, inventoryState }) => (
     {Object.keys(sizes).map(size => {
       let available = false;
 
+      const currentItem = state.cartItems.filter(
+        x => x.sku === product.sku && x.size === size
+      )[0];
+
+      const currentQty = (typeof currentItem === "undefined") ? 0 : currentItem.quantity;
+
       if (typeof inventoryState.inventory[product.sku] !== "undefined") {
-        if (inventoryState.inventory[product.sku][size] !== 0) available = true;
+          if (inventoryState.inventory[product.sku][size] - currentQty > 0) available = true;
       }
 
       return (
@@ -227,7 +230,7 @@ const CartButton = ({ state }) => (
   </Button>
 );
 
-const ShoppingCart = ({ state, data }) => {
+const ShoppingCart = ({ state, data, inventoryState }) => {
   return (
     <Segment.Group>
       <Segment>
@@ -241,6 +244,7 @@ const ShoppingCart = ({ state, data }) => {
               item={item}
               state={state}
               product={data[item.sku]}
+              inventoryState={inventoryState}
             />
           ))}
         </Card.Group>
@@ -258,9 +262,10 @@ const ShoppingCart = ({ state, data }) => {
   );
 };
 
-const CartItem = ({ item: t, product, state }) => {
+const CartItem = ({ item, product, state, inventoryState }) => {
   const imageURL = "data/products/" + product.sku + "_2.jpg";
-  const priceDisp = "$" + to2DP(t.price);
+  const priceDisp = "$" + to2DP(item.price);
+  const stockAvailable = inventoryState.inventory[item.sku][item.size] - item.quantity > 0 ? true : false
 
   return (
     <Card>
@@ -272,26 +277,27 @@ const CartItem = ({ item: t, product, state }) => {
           onClick={() =>
             state.setCartItems(
               state.cartItems.filter(
-                x => !(x.sku === t.sku && x.size === t.size)
+                x => !(x.sku === item.sku && x.size === item.size)
               )
             )
           }
         />
         <Card.Header>
-          {product.title} ({t.size})
+          {product.title} ({item.size})
         </Card.Header>
         <Card.Meta>{product.style}</Card.Meta>
         <Header size="large" color="blue">
           {priceDisp}
         </Header>
-        <Header floated="left">Quantity: {t.quantity}</Header>
+        <Header floated="left">Quantity: {item.quantity}</Header>
         <Button.Group size="mini">
           <Button
             icon="minus"
+            disabled={item.quantity > 1 ? false : true}
             onClick={() => {
               state.setCartItems(
                 state.cartItems.map(x => {
-                  if (x.sku === t.sku && x.size === t.size) {
+                  if (x.sku === item.sku && x.size === item.size && x.quantity > 1) {
                     x.quantity--;
                     return x;
                   } else return x;
@@ -301,10 +307,11 @@ const CartItem = ({ item: t, product, state }) => {
           />
           <Button
             icon="plus"
+            disabled={!stockAvailable}
             onClick={() => {
               state.setCartItems(
                 state.cartItems.map(x => {
-                  if (x.sku === t.sku && x.size === t.size) {
+                  if (x.sku === item.sku && x.size === item.size && stockAvailable) {
                     x.quantity++;
                     return x;
                   } else return x;
