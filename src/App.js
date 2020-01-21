@@ -60,7 +60,7 @@ const App = () => {
         </Menu>
         <Container>
           <Segment>
-            <Catalog products={products} state={{ cartItems, setCartItems }} />
+            <Catalog products={products} state={{ cartItems, setCartItems }} cartOpenState={{cartOpen, setCartOpen}} />
           </Segment>
         </Container>
       </Sidebar.Pusher>
@@ -68,15 +68,15 @@ const App = () => {
   );
 };
 
-const Catalog = ({ products, state }) => (
+const Catalog = ({ products, state, cartOpenState }) => (
   <Card.Group centered itemsPerRow="4" stackable>
     {products.map(product => (
-      <Product key={product.sku} product={product} state={state} />
+      <Product key={product.sku} product={product} state={state} cartOpenState={cartOpenState}/>
     ))}
   </Card.Group>
 );
 
-const Product = ({ product, state }) => {
+const Product = ({ product, state, cartOpenState }) => {
   const imageURL = "data/products/" + product.sku + "_2.jpg";
   const price = "$" + to2DP(product.price);
 
@@ -89,7 +89,7 @@ const Product = ({ product, state }) => {
       </Card.Content>
       <Card.Content extra>
         <Header textAlign="center">{price}</Header>
-        <SizeButtons product={product} state={state} />
+        <SizeButtons product={product} state={state} cartOpenState={cartOpenState}/>
       </Card.Content>
     </Card>
   );
@@ -102,7 +102,7 @@ const sizes = {
   XL: "Extra Large"
 };
 
-const SizeButtons = ({ product, state }) => (
+const SizeButtons = ({ product, state, cartOpenState }) => (
   <Button.Group fluid>
     {Object.keys(sizes).map(size => (
       <Button
@@ -127,6 +127,7 @@ const SizeButtons = ({ product, state }) => (
             };
             state.setCartItems(state.cartItems.concat([newItem]));
           }
+          cartOpenState.setCartOpen(true);
         }}
       >
         {size}
