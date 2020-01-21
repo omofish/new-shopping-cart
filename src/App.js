@@ -49,7 +49,7 @@ const App = () => {
         icon="labeled"
         visible={cartOpen}
       >
-        <ShoppingCart cartItems={cartItems} data={data} />
+        <ShoppingCart state={{ cartItems, setCartItems }} data={data} />
       </Sidebar>
 
       <Sidebar.Pusher>
@@ -60,7 +60,11 @@ const App = () => {
         </Menu>
         <Container>
           <Segment>
-            <Catalog products={products} state={{ cartItems, setCartItems }} cartOpenState={{cartOpen, setCartOpen}} />
+            <Catalog
+              products={products}
+              state={{ cartItems, setCartItems }}
+              cartOpenState={{ cartOpen, setCartOpen }}
+            />
           </Segment>
         </Container>
       </Sidebar.Pusher>
@@ -71,7 +75,12 @@ const App = () => {
 const Catalog = ({ products, state, cartOpenState }) => (
   <Card.Group centered itemsPerRow="4" stackable>
     {products.map(product => (
-      <Product key={product.sku} product={product} state={state} cartOpenState={cartOpenState}/>
+      <Product
+        key={product.sku}
+        product={product}
+        state={state}
+        cartOpenState={cartOpenState}
+      />
     ))}
   </Card.Group>
 );
@@ -89,7 +98,11 @@ const Product = ({ product, state, cartOpenState }) => {
       </Card.Content>
       <Card.Content extra>
         <Header textAlign="center">{price}</Header>
-        <SizeButtons product={product} state={state} cartOpenState={cartOpenState}/>
+        <SizeButtons
+          product={product}
+          state={state}
+          cartOpenState={cartOpenState}
+        />
       </Card.Content>
     </Card>
   );
@@ -150,7 +163,7 @@ const CartButton = ({ state }) => (
   </Button>
 );
 
-const ShoppingCart = ({ cartItems, data }) => {
+const ShoppingCart = ({ state, data }) => {
   return (
     <Segment.Group>
       <Segment>
@@ -158,12 +171,11 @@ const ShoppingCart = ({ cartItems, data }) => {
       </Segment>
       <Segment>
         <Card.Group itemsPerRow="1">
-          {cartItems.map(item => (
+          {state.cartItems.map(item => (
             <CartItem
               key={item.sku + item.size}
-              quantity={item.quantity}
-              price={item.price}
-              size={item.size}
+              item={item}
+              state={state}
               product={data[item.sku]}
             />
           ))}
@@ -172,7 +184,7 @@ const ShoppingCart = ({ cartItems, data }) => {
       <Segment attached="bottom" clearing>
         <Header size="large">Total Cost</Header>
         <Header>
-          <TotalCost cartItems={cartItems} />
+          <TotalCost cartItems={state.cartItems} />
         </Header>
         <Button floated="right" positive>
           Checkout
@@ -182,26 +194,50 @@ const ShoppingCart = ({ cartItems, data }) => {
   );
 };
 
-const CartItem = ({ quantity, product, price, size }) => {
+const CartItem = ({ item: t, product, state }) => {
   const imageURL = "data/products/" + product.sku + "_2.jpg";
-  const priceDisp = "$" + to2DP(price);
+  const priceDisp = "$" + to2DP(t.price);
 
   return (
     <Card>
       <Card.Content>
         <Image src={imageURL} size="tiny" floated="left" />
-        <Button icon="x" floated="right" />
+        <Button
+          icon="x"
+          floated="right"
+          onClick={() =>
+            state.setCartItems(
+              state.cartItems.filter(
+                x => !(x.sku === t.sku && x.size === t.size)
+              )
+            )
+          }
+        />
         <Card.Header>
-          {product.title} ({size})
+          {product.title} ({t.size})
         </Card.Header>
         <Card.Meta>{product.style}</Card.Meta>
         <Header size="large" color="blue">
           {priceDisp}
         </Header>
-        <Header floated="left">Quantity: {quantity}</Header>
+        <Header floated="left">Quantity: {t.quantity}</Header>
         <Button.Group size="mini">
-          <Button icon="minus" />
-          <Button icon="plus" />
+          <Button icon="minus" onClick={() => {
+            state.setCartItems(state.cartItems.map(x => {
+              if (x.sku === t.sku && x.size === t.size) {
+                x.quantity--;
+                return x;
+              } else return x;
+            }))
+          }} />
+          <Button icon="plus" onClick={() => {
+            state.setCartItems(state.cartItems.map(x => {
+              if (x.sku === t.sku && x.size === t.size) {
+                x.quantity++;
+                return x;
+              } else return x;
+            }))
+          }}/>
         </Button.Group>
       </Card.Content>
     </Card>
