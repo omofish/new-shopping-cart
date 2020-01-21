@@ -22,11 +22,39 @@ const fixedOverlayStyle = {
   zIndex: 10
 };
 
+const inventoryDB = {
+  "12064273040195392": {
+    S: 0,
+    M: 3,
+    L: 1,
+    XL: 2
+  },
+  "51498472915966370": {
+    S: 0,
+    M: 2,
+    L: 3,
+    XL: 2
+  },
+  "10686354557628304": {
+    S: 1,
+    M: 2,
+    L: 2,
+    XL: 1
+  },
+  "11033926921508488": {
+    S: 3,
+    M: 2,
+    L: 0,
+    XL: 1
+  }
+};
+
 const App = () => {
   const [data, setData] = useState({});
   const [cartOpen, setCartOpen] = useState(false);
   const products = Object.values(data);
   const [cartItems, setCartItems] = useState([]);
+  const [inventory, setInventory] = useState(inventoryDB);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -64,6 +92,7 @@ const App = () => {
               products={products}
               state={{ cartItems, setCartItems }}
               cartOpenState={{ cartOpen, setCartOpen }}
+              inventoryState={{ inventory, setInventory }}
             />
           </Segment>
         </Container>
@@ -72,7 +101,7 @@ const App = () => {
   );
 };
 
-const Catalog = ({ products, state, cartOpenState }) => (
+const Catalog = ({ products, state, cartOpenState, inventoryState }) => (
   <Card.Group centered itemsPerRow="4" stackable>
     {products.map(product => (
       <Product
@@ -80,12 +109,13 @@ const Catalog = ({ products, state, cartOpenState }) => (
         product={product}
         state={state}
         cartOpenState={cartOpenState}
+        inventoryState={ inventoryState }
       />
     ))}
   </Card.Group>
 );
 
-const Product = ({ product, state, cartOpenState }) => {
+const Product = ({ product, state, cartOpenState, inventoryState }) => {
   const imageURL = "data/products/" + product.sku + "_2.jpg";
   const price = "$" + to2DP(product.price);
 
@@ -102,6 +132,7 @@ const Product = ({ product, state, cartOpenState }) => {
           product={product}
           state={state}
           cartOpenState={cartOpenState}
+          inventoryState={ inventoryState }
         />
       </Card.Content>
     </Card>
@@ -115,37 +146,49 @@ const sizes = {
   XL: "Extra Large"
 };
 
-const SizeButtons = ({ product, state, cartOpenState }) => (
+const SizeButtons = ({ product, state, cartOpenState, inventoryState }) => (
   <Button.Group fluid>
-    {Object.keys(sizes).map(size => (
-      <Button
-        key={size}
-        onClick={() => {
-          let match = false;
-          const newCartItems = state.cartItems.map(item => {
-            if (item.sku === product.sku && item.size === size) {
-              item.quantity++;
-              match = true;
-              return item;
-            } else return item;
-          });
-          state.setCartItems(newCartItems);
-          // if none are found to be the same, create new entry
-          if (!match) {
-            const newItem = {
-              sku: product.sku,
-              price: product.price,
-              size: size,
-              quantity: 1
-            };
-            state.setCartItems(state.cartItems.concat([newItem]));
-          }
-          cartOpenState.setCartOpen(true);
-        }}
-      >
-        {size}
-      </Button>
-    ))}
+    {Object.keys(sizes).map(size => {
+      let available = false;
+      
+
+      if (typeof inventoryState.inventory[product.sku] !== "undefined") {
+        if (inventoryState.inventory[product.sku][size] !== 0)
+          available = true;
+      }
+
+      return (
+        <Button
+          key={size}
+          positive={available}
+          disabled={!available}
+          onClick={() => {
+            let match = false;
+            const newCartItems = state.cartItems.map(item => {
+              if (item.sku === product.sku && item.size === size) {
+                item.quantity++;
+                match = true;
+                return item;
+              } else return item;
+            });
+            state.setCartItems(newCartItems);
+            // if none are found to be the same, create new entry
+            if (!match) {
+              const newItem = {
+                sku: product.sku,
+                price: product.price,
+                size: size,
+                quantity: 1
+              };
+              state.setCartItems(state.cartItems.concat([newItem]));
+            }
+            cartOpenState.setCartOpen(true);
+          }}
+        >
+          {size}
+        </Button>
+      );
+    })}
   </Button.Group>
 );
 
@@ -222,22 +265,32 @@ const CartItem = ({ item: t, product, state }) => {
         </Header>
         <Header floated="left">Quantity: {t.quantity}</Header>
         <Button.Group size="mini">
-          <Button icon="minus" onClick={() => {
-            state.setCartItems(state.cartItems.map(x => {
-              if (x.sku === t.sku && x.size === t.size) {
-                x.quantity--;
-                return x;
-              } else return x;
-            }))
-          }} />
-          <Button icon="plus" onClick={() => {
-            state.setCartItems(state.cartItems.map(x => {
-              if (x.sku === t.sku && x.size === t.size) {
-                x.quantity++;
-                return x;
-              } else return x;
-            }))
-          }}/>
+          <Button
+            icon="minus"
+            onClick={() => {
+              state.setCartItems(
+                state.cartItems.map(x => {
+                  if (x.sku === t.sku && x.size === t.size) {
+                    x.quantity--;
+                    return x;
+                  } else return x;
+                })
+              );
+            }}
+          />
+          <Button
+            icon="plus"
+            onClick={() => {
+              state.setCartItems(
+                state.cartItems.map(x => {
+                  if (x.sku === t.sku && x.size === t.size) {
+                    x.quantity++;
+                    return x;
+                  } else return x;
+                })
+              );
+            }}
+          />
         </Button.Group>
       </Card.Content>
     </Card>
