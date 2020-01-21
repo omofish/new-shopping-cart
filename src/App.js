@@ -9,7 +9,8 @@ import {
   Menu,
   Segment,
   Icon,
-  Container
+  Container,
+  Dimmer
 } from "semantic-ui-react";
 import { to2DP } from "./components/utils";
 
@@ -109,7 +110,7 @@ const Catalog = ({ products, state, cartOpenState, inventoryState }) => (
         product={product}
         state={state}
         cartOpenState={cartOpenState}
-        inventoryState={ inventoryState }
+        inventoryState={inventoryState}
       />
     ))}
   </Card.Group>
@@ -119,23 +120,45 @@ const Product = ({ product, state, cartOpenState, inventoryState }) => {
   const imageURL = "data/products/" + product.sku + "_2.jpg";
   const price = "$" + to2DP(product.price);
 
+  let productAvailable = false;
+
+  if (typeof inventoryState.inventory[product.sku] !== "undefined") {
+    if (
+      Object.values(inventoryState.inventory[product.sku]).reduce(
+        (a, b) => a + b,
+        0
+      ) > 0
+    )
+      productAvailable = true;
+    console.log("avail");
+  }
+
   return (
-    <Card>
+    <Dimmer.Dimmable as={Card}>
       <Image src={imageURL} wrapped ui={false} />
       <Card.Content>
         <Card.Header textAlign="center">{product.title}</Card.Header>
         <Card.Meta textAlign="center">{product.style}</Card.Meta>
       </Card.Content>
       <Card.Content extra>
-        <Header textAlign="center">{price}</Header>
+        <Header textAlign="center" >
+          {price}
+        </Header>
         <SizeButtons
           product={product}
           state={state}
           cartOpenState={cartOpenState}
-          inventoryState={ inventoryState }
+          inventoryState={inventoryState}
         />
       </Card.Content>
-    </Card>
+
+      <Dimmer active={!productAvailable}>
+        <Header as="h2" icon inverted>
+          <Icon name="remove" />
+          Out of Stock
+        </Header>
+      </Dimmer>
+    </Dimmer.Dimmable>
   );
 };
 
@@ -150,11 +173,9 @@ const SizeButtons = ({ product, state, cartOpenState, inventoryState }) => (
   <Button.Group fluid>
     {Object.keys(sizes).map(size => {
       let available = false;
-      
 
       if (typeof inventoryState.inventory[product.sku] !== "undefined") {
-        if (inventoryState.inventory[product.sku][size] !== 0)
-          available = true;
+        if (inventoryState.inventory[product.sku][size] !== 0) available = true;
       }
 
       return (
