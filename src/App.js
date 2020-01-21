@@ -8,11 +8,8 @@ import {
   Button,
   Menu,
   Segment,
-  Grid,
   Icon,
-  GridColumn,
-  Container,
-  CardContent
+  Container
 } from "semantic-ui-react";
 import { to2DP } from "./components/utils";
 
@@ -21,6 +18,7 @@ const fixedOverlayStyle = {
   borderRadius: 0,
   boxShadow: "none",
   position: "fixed",
+  margin: "10px",
   zIndex: 10
 };
 
@@ -35,10 +33,10 @@ const App = () => {
       const response = await fetch("./data/products.json");
       const json = await response.json();
       setData(json);
-      setCartItems([
-        { sku: "12064273040195392", price: 10.9, quantity: 2 },
-        { sku: "51498472915966370", price: 29.45, quantity: 1 }
-      ]);
+      // setCartItems([
+      //   { sku: "12064273040195392", price: 10.9, size: "M", quantity: 2 },
+      //   { sku: "51498472915966370", price: 29.45, size: "M", quantity: 1 }
+      // ]);
     };
     fetchProducts();
   }, []);
@@ -57,12 +55,12 @@ const App = () => {
       <Sidebar.Pusher>
         <Menu style={fixedOverlayStyle} borderless>
           <Menu.Item>
-            <CartButton state={{cartOpen, setCartOpen}} />
+            <CartButton state={{ cartOpen, setCartOpen }} />
           </Menu.Item>
         </Menu>
         <Container>
           <Segment>
-            <Catalog products={products} />
+            <Catalog products={products} state={{ cartItems, setCartItems }} />
           </Segment>
         </Container>
       </Sidebar.Pusher>
@@ -70,15 +68,15 @@ const App = () => {
   );
 };
 
-const Catalog = ({ products }) => (
+const Catalog = ({ products, state }) => (
   <Card.Group centered itemsPerRow="4" stackable>
     {products.map(product => (
-      <Product key={product.sku} product={product} />
+      <Product key={product.sku} product={product} state={state} />
     ))}
   </Card.Group>
 );
 
-const Product = ({ product }) => {
+const Product = ({ product, state }) => {
   const imageURL = "data/products/" + product.sku + "_2.jpg";
   const price = "$" + to2DP(product.price);
 
@@ -91,7 +89,7 @@ const Product = ({ product }) => {
       </Card.Content>
       <Card.Content extra>
         <Header textAlign="center">{price}</Header>
-        <SizeButtons />
+        <SizeButtons product={product} state={state} />
       </Card.Content>
     </Card>
   );
@@ -104,15 +102,52 @@ const sizes = {
   XL: "Extra Large"
 };
 
-const SizeButtons = () => (
+const SizeButtons = ({ product, state }) => (
   <Button.Group fluid>
     {Object.keys(sizes).map(size => (
-      <Button key={size}>{size}</Button>
+      <Button
+        key={size}
+        onClick={() => {
+          let match = false;
+          const newCartItems = state.cartItems.map(item => {
+            if (item.sku === product.sku && item.size === size) {
+              item.quantity++;
+              match = true;
+              return item;
+            } else return item;
+          });
+          state.setCartItems(newCartItems);
+          // if none are found to be the same, create new entry
+          if (!match) {
+            const newItem = {
+              sku: product.sku,
+              price: product.price,
+              size: size,
+              quantity: 1
+            };
+            state.setCartItems(state.cartItems.concat([newItem]));
+          }
+        }}
+      >
+        {size}
+      </Button>
     ))}
   </Button.Group>
 );
 
-const CartButton = ({state}) => <Button toggle active={state.cartOpen} icon="shopping cart" onClick={()=> state.setCartOpen(!state.cartOpen)}/>;
+const CartButton = ({ state }) => (
+  <Button
+    toggle
+    active={!state.cartOpen}
+    size="huge"
+    icon
+    labelPosition="left"
+    onClick={() => state.setCartOpen(!state.cartOpen)}
+  >
+    <Icon name={state.cartOpen ? "x" : "shopping cart"} />
+    Cart
+  </Button>
+);
 
 const ShoppingCart = ({ cartItems, data }) => {
   return (
@@ -124,9 +159,10 @@ const ShoppingCart = ({ cartItems, data }) => {
         <Card.Group itemsPerRow="1">
           {cartItems.map(item => (
             <CartItem
-              key={item.sku}
+              key={item.sku + item.size}
               quantity={item.quantity}
               price={item.price}
+              size={item.size}
               product={data[item.sku]}
             />
           ))}
@@ -134,14 +170,18 @@ const ShoppingCart = ({ cartItems, data }) => {
       </Segment>
       <Segment attached="bottom" clearing>
         <Header size="large">Total Cost</Header>
-        <Header><TotalCost cartItems={cartItems}/></Header>
-        <Button floated="right" positive>Checkout</Button>
+        <Header>
+          <TotalCost cartItems={cartItems} />
+        </Header>
+        <Button floated="right" positive>
+          Checkout
+        </Button>
       </Segment>
     </Segment.Group>
   );
 };
 
-const CartItem = ({ quantity, product, price }) => {
+const CartItem = ({ quantity, product, price, size }) => {
   const imageURL = "data/products/" + product.sku + "_2.jpg";
   const priceDisp = "$" + to2DP(price);
 
@@ -150,7 +190,9 @@ const CartItem = ({ quantity, product, price }) => {
       <Card.Content>
         <Image src={imageURL} size="tiny" floated="left" />
         <Button icon="x" floated="right" />
-        <Card.Header>{product.title}</Card.Header>
+        <Card.Header>
+          {product.title} ({size})
+        </Card.Header>
         <Card.Meta>{product.style}</Card.Meta>
         <Header size="large" color="blue">
           {priceDisp}
@@ -165,7 +207,7 @@ const CartItem = ({ quantity, product, price }) => {
   );
 };
 
-const TotalCost = ({cartItems}) => {
+const TotalCost = ({ cartItems }) => {
   let total = 0;
   if (cartItems) {
     cartItems.forEach(item => {
@@ -173,6 +215,7 @@ const TotalCost = ({cartItems}) => {
     });
     total = "$" + to2DP(total);
   }
-  return(cartItems ? total : "$0.00")};
+  return cartItems ? total : "$0.00";
+};
 
 export default App;
