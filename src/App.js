@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import "semantic-ui-css/semantic.min.css";
 import firebase from "firebase/app";
 import "firebase/database";
+import 'firebase/auth';
+import StyledFirebaseAuth from 'react-firebaseui/StyledFirebaseAuth';
 import {
   Card,
   Image,
@@ -12,6 +14,7 @@ import {
   Segment,
   Icon,
   Container,
+  Message,
   Dimmer
 } from "semantic-ui-react";
 import { to2DP } from "./components/utils";
@@ -29,6 +32,16 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const inventoryDB2 = firebase.database().ref();
 
+const uiConfig = {
+  signInFlow: 'popup',
+  signInOptions: [
+    firebase.auth.GoogleAuthProvider.PROVIDER_ID
+  ],
+  callbacks: {
+    signInSuccessWithAuthResult: () => false
+  }
+};
+
 const fixedOverlayStyle = {
   border: "none",
   borderRadius: 0,
@@ -44,6 +57,8 @@ const App = () => {
   const products = Object.values(data);
   const [cartItems, setCartItems] = useState([]);
   const [inventory, setInventory] = useState([]);
+  const [user, setUser] = useState(null);
+
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -59,6 +74,10 @@ const App = () => {
   }, []);
 
   useEffect(() => {
+    firebase.auth().onAuthStateChanged(setUser);
+  }, []);
+
+  useEffect(() => {
     const handleData = snap => {
       if (snap.val()) setInventory(snap.val());
     };
@@ -70,6 +89,7 @@ const App = () => {
 
   return (
     <Sidebar.Pushable as={Segment}>
+      <Banner user={ user } />
       <Sidebar
         width="very wide"
         animation="push"
@@ -103,6 +123,33 @@ const App = () => {
     </Sidebar.Pushable>
   );
 };
+
+const Banner = ({ user, title }) => (
+  <React.Fragment>
+    { user ? <Welcome user={ user } /> : <SignIn /> }
+  </React.Fragment>
+);
+
+const SignIn = () => (
+  <StyledFirebaseAuth
+    uiConfig={uiConfig}
+    firebaseAuth={firebase.auth()}
+  />
+);
+
+
+const Welcome = ({ user }) => (
+  <Message color="info">
+    <Segment basic as={Message.Header} >
+      Welcome, {user.displayName}
+      <Button floated="right" primary onClick={() => firebase.auth().signOut()}>
+        Log out
+      </Button>
+    </Segment>
+  </Message>
+);
+
+
 
 const Catalog = ({ products, state, cartOpenState, inventoryState }) => (
   <Card.Group centered itemsPerRow="4" stackable>
