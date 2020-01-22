@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "semantic-ui-css/semantic.min.css";
+import firebase from "firebase/app";
+import "firebase/database";
 import {
   Card,
   Image,
@@ -14,6 +16,19 @@ import {
 } from "semantic-ui-react";
 import { to2DP } from "./components/utils";
 
+const firebaseConfig = {
+  apiKey: "AIzaSyCS2_eO1zh7jR3yOGbC9aeOcLEze5jppOw",
+  authDomain: "new-shopping-cart-216ac.firebaseapp.com",
+  databaseURL: "https://new-shopping-cart-216ac.firebaseio.com",
+  projectId: "new-shopping-cart-216ac",
+  storageBucket: "new-shopping-cart-216ac.appspot.com",
+  messagingSenderId: "67349935504",
+  appId: "1:67349935504:web:2213ff7b84f54ad80aaf15"
+};
+
+firebase.initializeApp(firebaseConfig);
+const inventoryDB2 = firebase.database().ref();
+
 const fixedOverlayStyle = {
   border: "none",
   borderRadius: 0,
@@ -23,39 +38,12 @@ const fixedOverlayStyle = {
   zIndex: 10
 };
 
-const inventoryDB = {
-  "12064273040195392": {
-    S: 0,
-    M: 3,
-    L: 1,
-    XL: 2
-  },
-  "51498472915966370": {
-    S: 0,
-    M: 2,
-    L: 3,
-    XL: 2
-  },
-  "10686354557628304": {
-    S: 1,
-    M: 2,
-    L: 2,
-    XL: 1
-  },
-  "11033926921508488": {
-    S: 3,
-    M: 2,
-    L: 0,
-    XL: 1
-  }
-};
-
 const App = () => {
   const [data, setData] = useState({});
   const [cartOpen, setCartOpen] = useState(false);
   const products = Object.values(data);
   const [cartItems, setCartItems] = useState([]);
-  const [inventory, setInventory] = useState(inventoryDB);
+  const [inventory, setInventory] = useState([]);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -70,6 +58,16 @@ const App = () => {
     fetchProducts();
   }, []);
 
+  useEffect(() => {
+    const handleData = snap => {
+      if (snap.val()) setInventory(snap.val());
+    };
+    inventoryDB2.on("value", handleData, error => alert(error));
+    return () => {
+      inventoryDB2.off("value", handleData);
+    };
+  });
+
   return (
     <Sidebar.Pushable as={Segment}>
       <Sidebar
@@ -78,7 +76,11 @@ const App = () => {
         icon="labeled"
         visible={cartOpen}
       >
-        <ShoppingCart state={{ cartItems, setCartItems }} data={data} inventoryState={{ inventory, setInventory }}/>
+        <ShoppingCart
+          state={{ cartItems, setCartItems }}
+          data={data}
+          inventoryState={{ inventory, setInventory }}
+        />
       </Sidebar>
 
       <Sidebar.Pusher>
@@ -122,14 +124,26 @@ const Product = ({ product, state, cartOpenState, inventoryState }) => {
 
   let productAvailable = false;
 
+  const totalProductsInCart = state.cartItems.filter(
+    x => x.sku === product.sku
+  );
+
   if (typeof inventoryState.inventory[product.sku] !== "undefined") {
-    if (
-      Object.values(inventoryState.inventory[product.sku]).reduce(
-        (a, b) => a + b,
-        0
-      ) > 0
-    )
-      productAvailable = true;
+    if (totalProductsInCart.length >= 0) {
+      const totalProductsCount = totalProductsInCart.map(x => x.quantity);
+      console.log(totalProductsCount);
+      
+      if (
+        Object.values(inventoryState.inventory[product.sku]).reduce(
+          (a, b) => a + b,
+          0
+        ) > Object.values(totalProductsCount).reduce(
+          (a, b) => a + b,
+          0
+        )
+      )
+        productAvailable = true;
+    }
   }
 
   return (
@@ -175,10 +189,12 @@ const SizeButtons = ({ product, state, cartOpenState, inventoryState }) => (
         x => x.sku === product.sku && x.size === size
       )[0];
 
-      const currentQty = (typeof currentItem === "undefined") ? 0 : currentItem.quantity;
+      const currentQty =
+        typeof currentItem === "undefined" ? 0 : currentItem.quantity;
 
       if (typeof inventoryState.inventory[product.sku] !== "undefined") {
-          if (inventoryState.inventory[product.sku][size] - currentQty > 0) available = true;
+        if (inventoryState.inventory[product.sku][size] - currentQty > 0)
+          available = true;
       }
 
       return (
@@ -265,7 +281,10 @@ const ShoppingCart = ({ state, data, inventoryState }) => {
 const CartItem = ({ item, product, state, inventoryState }) => {
   const imageURL = "data/products/" + product.sku + "_2.jpg";
   const priceDisp = "$" + to2DP(item.price);
-  const stockAvailable = inventoryState.inventory[item.sku][item.size] - item.quantity > 0 ? true : false
+  const stockAvailable =
+    inventoryState.inventory[item.sku][item.size] - item.quantity > 0
+      ? true
+      : false;
 
   return (
     <Card>
@@ -297,7 +316,11 @@ const CartItem = ({ item, product, state, inventoryState }) => {
             onClick={() => {
               state.setCartItems(
                 state.cartItems.map(x => {
-                  if (x.sku === item.sku && x.size === item.size && x.quantity > 1) {
+                  if (
+                    x.sku === item.sku &&
+                    x.size === item.size &&
+                    x.quantity > 1
+                  ) {
                     x.quantity--;
                     return x;
                   } else return x;
@@ -311,7 +334,11 @@ const CartItem = ({ item, product, state, inventoryState }) => {
             onClick={() => {
               state.setCartItems(
                 state.cartItems.map(x => {
-                  if (x.sku === item.sku && x.size === item.size && stockAvailable) {
+                  if (
+                    x.sku === item.sku &&
+                    x.size === item.size &&
+                    stockAvailable
+                  ) {
                     x.quantity++;
                     return x;
                   } else return x;
