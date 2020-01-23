@@ -140,7 +140,7 @@ const SignIn = () => (
 
 const Welcome = ({ user }) => (
   <Message color="info">
-    <Segment basic as={Message.Header} >
+    <Segment basic compact clearing as={Message.Header} >
       Welcome, {user.displayName}
       <Button floated="right" primary onClick={() => firebase.auth().signOut()}>
         Log out
